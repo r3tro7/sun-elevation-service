@@ -8,3 +8,8 @@ maximum sun elevation over a time range.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+## API (stub)
+```
+POST /maximum_sun_elevation
+```
