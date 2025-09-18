@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from datetime import datetime, timezone
+from typing import Dict
+from datetime import datetime, timedelta, timezone
+
+from solar import solar_elevation
 
 app = FastAPI(title="Sun Elevation Service")
 
@@ -11,15 +14,15 @@ class Coordinates(BaseModel):
 class RequestModel(BaseModel):
     coordinates: Coordinates
     elevation_m: float
-    start_time: str  # ISO-8601; assume UTC if tz missing
+    start_time: str
     end_time: str
 
 class ResponseModel(BaseModel):
     maximum_sun_elevation: float
 
 def parse_time(s: str) -> datetime:
-    if s.endswith("Z"):
-        return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc)
+    if s.endswith('Z'):
+        return datetime.fromisoformat(s.replace('Z', '+00:00')).astimezone(timezone.utc)
     dt = datetime.fromisoformat(s)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
@@ -35,5 +38,16 @@ def maximum_sun_elevation(req: RequestModel):
     if end <= start:
         raise HTTPException(status_code=400, detail="end_time must be after start_time")
 
-    # return a placeholder for now
-    return ResponseModel(maximum_sun_elevation=0.0)
+    max_steps = 48 * 60  # 2 days at 1-min steps
+    total_minutes = int((end - start).total_seconds() // 60)
+    step_minutes = 1 if total_minutes <= max_steps else max(1, total_minutes // max_steps)
+
+    t = start
+    max_elev = -90.0
+    while t <= end:
+        elev = solar_elevation(req.coordinates.lat, req.coordinates.lon, req.elevation_m, t)
+        if elev > max_elev:
+            max_elev = elev
+        t += timedelta(minutes=step_minutes)
+
+    return ResponseModel(maximum_sun_elevation=round(max_elev, 6))
