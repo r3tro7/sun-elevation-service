@@ -76,10 +76,22 @@ def solar_elevation(latitude_deg, longitude_deg, elevation_m, dt_utc):
     tst = _true_solar_time_minutes(dt_utc, longitude_deg, eqtime)
     ha = _hour_angle_deg(tst)
 
-    from math import radians as r, degrees as d
-    lat = r(latitude_deg); dec = r(decl); ha_r = r(ha)
+    lat = radians(latitude_deg)
+    dec = radians(decl)
+    ha_r = radians(ha)
+
     cos_zen = sin(lat)*sin(dec) + cos(lat)*cos(dec)*cos(ha_r)
     cos_zen = max(-1.0, min(1.0, cos_zen))
-    zenith_deg = d(acos(cos_zen))
+    zenith_deg = degrees(acos(cos_zen))
     elevation = 90.0 - zenith_deg
-    return elevation  # geometric elevation; refraction added later
+
+    # Refraction correction (NOAA approximation), scaled by pressure vs altitude
+    pressure = 1010.0 * exp(-elevation_m/8434.5)   # hPa
+    temperature = 15.0                              # °C
+    if elevation > -0.575:
+        ref = (1.02 / tan(radians(elevation + 10.3/(elevation + 5.11)))) / 60.0
+    else:
+        ref = 0.0
+    ref *= (pressure/1010.0) * (283.0/(273.0 + temperature))
+
+    return elevation + ref
