@@ -3,10 +3,13 @@
 Bootstrap repo. Next steps will add a FastAPI service that computes
 maximum sun elevation over a time range.
 
-## Dev
+## Run locally
+
 ```
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 ```
 
 ## API
