@@ -36,7 +36,7 @@ uvicorn main:app --reload --port 8000
 Run the provided pytest integration test in another terminal:
 
 ```
-pytest -q /mnt/data/integration_test.py
+pytest -q integration_test.py
 ```
 
 ## Docker
